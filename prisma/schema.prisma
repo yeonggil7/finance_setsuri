@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Church {
+  id                   String   @id @default(cuid())
+  name                 String
+  fiscalYear           Int      @default(2026)
+  missionFeeRate       Float    @default(0)
+  prevYearBalance      Int      @default(0)
+  prevYearFixedDeposit Int      @default(0)
+  janMissionFee        Int      @default(0)
+  janDispatchFee       Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  monthlyReports       MonthlyReport[]
+}
+
+model MonthlyReport {
+  id        String   @id @default(cuid())
+  churchId  String
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  month     Int
+  isClosed  Boolean  @default(false)
+  closedAt  DateTime?
+  note      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entries   ReportEntry[]
+  transfers TransferEntry[]
+
+  @@unique([churchId, month])
+}
+
+model ReportEntry {
+  id              String        @id @default(cuid())
+  reportId        String
+  report          MonthlyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  section         String
+  categoryCode    String
+  subcategoryCode String
+  amount          Int           @default(0)
+  memo            String        @default("")
+
+  @@unique([reportId, section, categoryCode, subcategoryCode])
+}
+
+model TransferEntry {
+  id          String        @id @default(cuid())
+  reportId    String
+  report      MonthlyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  bankAccount String
+  itemName    String
+  amount      Int           @default(0)
+
+  @@unique([reportId, bankAccount, itemName])
+}
