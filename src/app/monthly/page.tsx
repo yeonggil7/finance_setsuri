@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { INCOME_ACCOUNTS, EXPENSE_ACCOUNTS, BANK_ACCOUNTS } from "@/lib/accounts";
 import { formatNumber, monthLabel } from "@/lib/utils";
 import { Lock, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function MonthlyPageWrapper() {
   return (
@@ -53,6 +54,7 @@ type Report = {
 };
 
 function MonthlyPage() {
+  const { user } = useAuth();
   const [church, setChurch] = useState<Church | null>(null);
   const searchParams = useSearchParams();
   const [month, setMonth] = useState(() => {
@@ -67,7 +69,8 @@ function MonthlyPage() {
   const [tooltip, setTooltip] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/church")
+    if (!user.churchId) return;
+    fetch(`/api/church?id=${user.churchId}`)
       .then((r) => r.json())
       .then((c) => {
         setChurch(c);
@@ -75,7 +78,7 @@ function MonthlyPage() {
           .then((r) => r.json())
           .then(setAllReports);
       });
-  }, []);
+  }, [user.churchId]);
 
   useEffect(() => {
     if (!church) return;

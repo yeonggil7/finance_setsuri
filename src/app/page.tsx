@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 type Church = {
   id: string;
@@ -44,11 +45,13 @@ type Report = {
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [church, setChurch] = useState<Church | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
 
   useEffect(() => {
-    fetch("/api/church")
+    if (!user.churchId) return;
+    fetch(`/api/church?id=${user.churchId}`)
       .then((r) => r.json())
       .then((c) => {
         setChurch(c);
@@ -56,7 +59,15 @@ export default function DashboardPage() {
           .then((r) => r.json())
           .then(setReports);
       });
-  }, []);
+  }, [user.churchId]);
+
+  if (user.role === "DENOMINATION") {
+    return (
+      <div className="p-8 text-slate-500">
+        教団管理者モードです。左メニューの「全教会サマリー」をご覧ください。
+      </div>
+    );
+  }
 
   if (!church)
     return <div className="p-8 text-slate-500">読み込み中...</div>;
@@ -137,7 +148,6 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <KPICard
           icon={<TrendingUp className="w-5 h-5 text-green-600" />}
@@ -169,7 +179,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">
@@ -225,7 +234,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        {/* Offering Pie Chart */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">
             献金内訳（年間）
@@ -259,7 +267,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Monthly Status */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">
             月別報告状況

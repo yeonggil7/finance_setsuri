@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 type ChurchData = {
   id: string;
@@ -14,15 +15,17 @@ type ChurchData = {
 };
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<ChurchData | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/church")
+    if (!user.churchId) return;
+    fetch(`/api/church?id=${user.churchId}`)
       .then((r) => r.json())
       .then(setData);
-  }, []);
+  }, [user.churchId]);
 
   async function handleSave() {
     if (!data) return;
@@ -30,7 +33,7 @@ export default function SettingsPage() {
     const res = await fetch("/api/church", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, id: data.id }),
     });
     const updated = await res.json();
     setData(updated);

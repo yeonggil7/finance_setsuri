@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { INCOME_ACCOUNTS, EXPENSE_ACCOUNTS } from "@/lib/accounts";
 import { formatNumber, monthLabel } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 type Church = {
   id: string;
@@ -26,12 +27,14 @@ type Report = {
 };
 
 export default function AnnualPage() {
+  const { user } = useAuth();
   const [church, setChurch] = useState<Church | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [view, setView] = useState<"income" | "expense">("income");
 
   useEffect(() => {
-    fetch("/api/church")
+    if (!user.churchId) return;
+    fetch(`/api/church?id=${user.churchId}`)
       .then((r) => r.json())
       .then((c) => {
         setChurch(c);
@@ -39,7 +42,7 @@ export default function AnnualPage() {
           .then((r) => r.json())
           .then(setReports);
       });
-  }, []);
+  }, [user.churchId]);
 
   if (!church)
     return <div className="p-8 text-slate-500">読み込み中...</div>;
