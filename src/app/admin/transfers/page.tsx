@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { formatNumber, monthLabel } from "@/lib/utils";
 import { TRANSFER_COLUMNS } from "@/lib/transfer-columns";
 import { ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
@@ -29,7 +29,7 @@ export default function AdminTransfersPage() {
   });
   const [year, setYear] = useState(2026);
   const [loading, setLoading] = useState(true);
-  const [editingMemo, setEditingMemo] = useState<string | null>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [memoValue, setMemoValue] = useState("");
 
   const visibleColumns = TRANSFER_COLUMNS.filter(
@@ -69,26 +69,56 @@ export default function AdminTransfersPage() {
 
   const grandTotal = data.reduce((sum, church) => sum + getRowTotal(church), 0);
 
-  const handleMemoSave = async (transferId: string) => {
-    await fetch("/api/admin/transfers", {
+  const handleMemoSave = async (
+    cellKey: string,
+    existingId: string | undefined,
+    churchId: string,
+    bankAccount: string,
+    itemName: string
+  ) => {
+    const payload = existingId
+      ? { id: existingId, adminMemo: memoValue }
+      : { churchId, month, year, bankAccount, itemName, adminMemo: memoValue };
+
+    const res = await fetch("/api/admin/transfers", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: transferId, adminMemo: memoValue }),
+      body: JSON.stringify(payload),
     });
+    const saved = await res.json();
+
     setData((prev) =>
-      prev.map((church) => ({
-        ...church,
-        transfers: church.transfers.map((t) =>
-          t.id === transferId ? { ...t, adminMemo: memoValue } : t
-        ),
-      }))
+      prev.map((church) => {
+        if (church.churchId !== churchId) return church;
+        const existingIdx = church.transfers.findIndex(
+          (t) => t.bankAccount === bankAccount && t.itemName === itemName
+        );
+        if (existingIdx >= 0) {
+          const updated = [...church.transfers];
+          updated[existingIdx] = { ...updated[existingIdx], adminMemo: memoValue };
+          return { ...church, transfers: updated };
+        }
+        return {
+          ...church,
+          transfers: [
+            ...church.transfers,
+            {
+              id: saved.id,
+              bankAccount,
+              itemName,
+              amount: saved.amount ?? 0,
+              adminMemo: memoValue,
+            },
+          ],
+        };
+      })
     );
-    setEditingMemo(null);
+    setEditingKey(null);
     setMemoValue("");
   };
 
-  const startEditMemo = (transferId: string, currentMemo: string) => {
-    setEditingMemo(transferId);
+  const startEditMemo = (cellKey: string, currentMemo: string) => {
+    setEditingKey(cellKey);
     setMemoValue(currentMemo);
   };
 
@@ -192,20 +222,14 @@ export default function AdminTransfersPage() {
                   <th className="sticky left-0 bg-slate-50 z-10"></th>
                   <th className="sticky left-[48px] bg-slate-50 z-10"></th>
                   {visibleColumns.map((col) => (
-                    <>
-                      <th
-                        key={`${col.key}-amt`}
-                        className="text-right px-2 py-1 text-slate-500 border-l border-slate-200"
-                      >
+                    <React.Fragment key={`hdr-${col.key}`}>
+                      <th className="text-right px-2 py-1 text-slate-500 border-l border-slate-200">
                         金額
                       </th>
-                      <th
-                        key={`${col.key}-memo`}
-                        className="text-left px-2 py-1 text-slate-500 min-w-[100px]"
-                      >
+                      <th className="text-left px-2 py-1 text-slate-500 min-w-[100px]">
                         メモ
                       </th>
-                    </>
+                    </React.Fragment>
                   ))}
                   <th className="border-l-2 border-slate-300"></th>
                 </tr>
@@ -227,23 +251,20 @@ export default function AdminTransfersPage() {
                       const amount = transfer?.amount ?? 0;
                       const memoId = transfer?.id;
                       const memo = transfer?.adminMemo ?? "";
-                      const isEditing = editingMemo === memoId;
+                      const cellKey = `${church.churchId}-${col.key}`;
+                      const isEditing = editingKey === cellKey;
 
                       return (
-                        <>
+                        <React.Fragment key={cellKey}>
                           <td
-                            key={`${church.churchId}-${col.key}-amt`}
                             className={`text-right px-2 py-2 tabular-nums border-l border-slate-100 ${
                               amount > 0 ? "text-slate-800" : "text-slate-300"
                             }`}
                           >
                             {amount > 0 ? formatNumber(amount) : "-"}
                           </td>
-                          <td
-                            key={`${church.churchId}-${col.key}-memo`}
-                            className="px-1 py-1"
-                          >
-                            {memoId && isEditing ? (
+                          <td className="px-1 py-1">
+                            {isEditing ? (
                               <div className="flex items-center gap-1">
                                 <input
                                   type="text"
@@ -251,16 +272,19 @@ export default function AdminTransfersPage() {
                                   value={memoValue}
                                   onChange={(e) => setMemoValue(e.target.value)}
                                   onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleMemoSave(memoId);
-                                    if (e.key === "Escape") setEditingMemo(null);
+                                    if (e.key === "Enter")
+                                      handleMemoSave(cellKey, memoId, church.churchId, col.bankAccount, col.itemName);
+                                    if (e.key === "Escape") setEditingKey(null);
                                   }}
-                                  onBlur={() => handleMemoSave(memoId)}
+                                  onBlur={() =>
+                                    handleMemoSave(cellKey, memoId, church.churchId, col.bankAccount, col.itemName)
+                                  }
                                   autoFocus
                                 />
                               </div>
-                            ) : memoId ? (
+                            ) : (
                               <button
-                                onClick={() => startEditMemo(memoId, memo)}
+                                onClick={() => startEditMemo(cellKey, memo)}
                                 className={`text-xs px-1.5 py-1 rounded w-full text-left transition-colors ${
                                   memo
                                     ? "text-amber-700 bg-amber-50 hover:bg-amber-100"
@@ -272,11 +296,9 @@ export default function AdminTransfersPage() {
                                   <MessageSquare className="w-3 h-3 inline" />
                                 )}
                               </button>
-                            ) : (
-                              <span className="text-slate-200 text-xs px-1.5">-</span>
                             )}
                           </td>
-                        </>
+                        </React.Fragment>
                       );
                     })}
                     <td className="text-right px-3 py-2 font-medium text-blue-700 tabular-nums border-l-2 border-slate-300 bg-blue-50/30">
@@ -292,15 +314,12 @@ export default function AdminTransfersPage() {
                     合計
                   </td>
                   {visibleColumns.map((col) => (
-                    <>
-                      <td
-                        key={`total-${col.key}-amt`}
-                        className="text-right px-2 py-3 text-slate-800 tabular-nums border-l border-slate-200"
-                      >
+                    <React.Fragment key={`total-${col.key}`}>
+                      <td className="text-right px-2 py-3 text-slate-800 tabular-nums border-l border-slate-200">
                         {formatNumber(getColumnTotal(col.bankAccount, col.itemName))}
                       </td>
-                      <td key={`total-${col.key}-memo`}></td>
-                    </>
+                      <td></td>
+                    </React.Fragment>
                   ))}
                   <td className="text-right px-3 py-3 text-blue-800 tabular-nums border-l-2 border-slate-300 bg-blue-100">
                     {formatNumber(grandTotal)}
@@ -315,8 +334,9 @@ export default function AdminTransfersPage() {
       <div className="mt-4 bg-white rounded-xl border border-slate-200 p-4">
         <h4 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">使い方</h4>
         <div className="text-xs text-slate-600 space-y-1">
-          <p>各金額の横にあるメモ欄をクリックして、照合結果やメモを記入できます。</p>
+          <p>各金額の横にあるメモ欄（吹き出しアイコン）をクリックして、照合結果やメモを記入できます。</p>
           <p>金額の相違や教会への確認事項を記録してください。Enterキーで保存、Escキーでキャンセルです。</p>
+          <p>教会がまだ振込データを入力していない場合でも、メモを記入することができます。</p>
         </div>
       </div>
     </div>

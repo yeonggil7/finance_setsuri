@@ -507,6 +507,16 @@ export const BANK_ACCOUNTS = [
     ],
   },
   {
+    code: "special",
+    name: "特別献金預かり金",
+    items: [
+      { code: "offering_316", name: "316特別献金（3月）" },
+      { code: "offering_alpha", name: "アルパの日献金（6月）" },
+      { code: "offering_christmas", name: "クリスマス献金（12月）" },
+      { code: "holy_land", name: "聖地管理献金" },
+    ],
+  },
+  {
     code: "mufg",
     name: "三菱UFJ銀行（従来の任意団体）",
     items: [{ code: "repayment", name: "教団への返済等" }],

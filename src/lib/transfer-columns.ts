@@ -15,6 +15,7 @@ export const TRANSFER_COLUMNS: TransferColumn[] = [
   { key: "offering_316", label: "316特別献金", bankAccount: "special", itemName: "offering_316", onlyMonth: 3 },
   { key: "offering_alpha", label: "アルパの日献金", bankAccount: "special", itemName: "offering_alpha", onlyMonth: 6 },
   { key: "offering_christmas", label: "クリスマス献金", bankAccount: "special", itemName: "offering_christmas", onlyMonth: 12 },
+  { key: "holy_land", label: "聖地管理献金", bankAccount: "special", itemName: "holy_land" },
   { key: "sbi_other", label: "その他", bankAccount: "sbi_individual", itemName: "other" },
   { key: "sbi_offset", label: "教団相殺分", bankAccount: "sbi_individual", itemName: "offset" },
   { key: "mufg_repay", label: "教団返済等", bankAccount: "mufg", itemName: "repayment" },
