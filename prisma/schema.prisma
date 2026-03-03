@@ -57,6 +57,7 @@ model TransferEntry {
   bankAccount String
   itemName    String
   amount      Int           @default(0)
+  adminMemo   String        @default("")
 
   @@unique([reportId, bankAccount, itemName])
 }

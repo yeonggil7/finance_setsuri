@@ -10,6 +10,7 @@ import {
   Building2,
   Users,
   ChevronDown,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
@@ -23,6 +24,7 @@ const CHURCH_NAV = [
 
 const DENOMINATION_NAV = [
   { href: "/admin", label: "全教会サマリー", icon: LayoutDashboard },
+  { href: "/admin/transfers", label: "振込情報一覧", icon: ArrowRightLeft },
   { href: "/admin/churches", label: "教会管理", icon: Building2 },
 ];
 
