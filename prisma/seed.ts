@@ -9,6 +9,8 @@ const SAMPLE_CHURCHES = [
   { name: "東京", prevYearBalance: 1500000, missionFeeRate: 3.5 },
   { name: "大阪", prevYearBalance: 800000, missionFeeRate: 3.0 },
   { name: "名古屋", prevYearBalance: 1200000, missionFeeRate: 2.5 },
+  { name: "福岡", prevYearBalance: 600000, missionFeeRate: 2.0 },
+  { name: "横浜", prevYearBalance: 950000, missionFeeRate: 3.0 },
 ];
 
 const INCOME_ENTRIES = [
@@ -20,7 +22,6 @@ const INCOME_ENTRIES = [
 ];
 
 const EXPENSE_ENTRIES = [
-  // 宗教活動費 (1-1): 会費・派遣宣教費・活動費
   { categoryCode: "1-1", subcategoryCode: "mission_fee", min: 15000, max: 40000 },
   { categoryCode: "1-1", subcategoryCode: "broadcast_fee", min: 5000, max: 15000 },
   { categoryCode: "1-1", subcategoryCode: "regional_fee", min: 3000, max: 10000 },
@@ -29,20 +30,34 @@ const EXPENSE_ENTRIES = [
   { categoryCode: "1-1", subcategoryCode: "mission_support", min: 3000, max: 15000 },
   { categoryCode: "1-1", subcategoryCode: "event_expense", min: 5000, max: 20000 },
   { categoryCode: "1-1", subcategoryCode: "mission_consumable", min: 2000, max: 10000 },
-  // 管理費(聖殿) (1-2)
   { categoryCode: "1-2", subcategoryCode: "temple_rent", min: 50000, max: 120000 },
   { categoryCode: "1-2", subcategoryCode: "temple_utility", min: 10000, max: 30000 },
   { categoryCode: "1-2", subcategoryCode: "temple_comm", min: 3000, max: 8000 },
   { categoryCode: "1-2", subcategoryCode: "temple_insurance", min: 2000, max: 8000 },
-  // 管理費(拠点) (1-3)
   { categoryCode: "1-3", subcategoryCode: "base_rent", min: 30000, max: 80000 },
   { categoryCode: "1-3", subcategoryCode: "base_utility", min: 5000, max: 15000 },
-  // 人件費(1)給与手当 (2-1)
   { categoryCode: "2-1", subcategoryCode: "housing_support", min: 30000, max: 80000 },
   { categoryCode: "2-1", subcategoryCode: "church_mission_fee", min: 20000, max: 50000 },
-  // 人件費(2)福利厚生費 (2-2)
   { categoryCode: "2-2", subcategoryCode: "welfare_fee", min: 10000, max: 25000 },
   { categoryCode: "2-2", subcategoryCode: "legal_welfare", min: 15000, max: 35000 },
+];
+
+type TransferSeed = {
+  bankAccount: string;
+  itemName: string;
+  min: number;
+  max: number;
+  onlyMonth?: number;
+};
+
+const TRANSFER_ENTRIES: TransferSeed[] = [
+  { bankAccount: "sbi_individual", itemName: "mission_fee", min: 15000, max: 45000 },
+  { bankAccount: "sbi_individual", itemName: "dispatch_fee", min: 30000, max: 80000 },
+  { bankAccount: "gmo", itemName: "mission_offering", min: 10000, max: 40000 },
+  { bankAccount: "sbi_common", itemName: "welfare_fee", min: 10000, max: 25000 },
+  { bankAccount: "gmo", itemName: "broadcast_fee", min: 5000, max: 15000 },
+  { bankAccount: "special", itemName: "offering_316", min: 20000, max: 80000, onlyMonth: 3 },
+  { bankAccount: "special", itemName: "holy_land", min: 5000, max: 20000 },
 ];
 
 function randomInt(min: number, max: number) {
@@ -122,7 +137,19 @@ async function main() {
         });
       }
 
-      console.log(`    Month ${month}: created with sample entries`);
+      for (const te of TRANSFER_ENTRIES) {
+        if (te.onlyMonth && te.onlyMonth !== month) continue;
+        await prisma.transferEntry.create({
+          data: {
+            reportId: report.id,
+            bankAccount: te.bankAccount,
+            itemName: te.itemName,
+            amount: randomInt(te.min, te.max),
+          },
+        });
+      }
+
+      console.log(`    Month ${month}: created with sample entries + transfers`);
     }
   }
 
