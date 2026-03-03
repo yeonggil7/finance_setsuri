@@ -365,12 +365,12 @@ function MonthlyPage() {
                         {item.name}
                       </span>
                       <input
+                        key={`${report.id}-${bank.code}-${item.code}`}
                         type="number"
                         className="input-field w-36 text-right"
-                        value={existing?.amount ?? ""}
+                        defaultValue={existing?.amount ?? ""}
                         disabled={report.isClosed}
                         placeholder="0"
-                        onChange={() => {}}
                         onBlur={async (e) => {
                           const val = parseInt(e.target.value) || 0;
                           await fetch("/api/transfers", {
@@ -403,11 +403,11 @@ function MonthlyPage() {
       <section className="bg-white rounded-xl border border-slate-200 mb-6 p-5">
         <h3 className="font-semibold text-slate-700 mb-3">教会からの連絡</h3>
         <textarea
+          key={`note-${report.id}`}
           className="input-field w-full h-24 resize-y"
-          value={report.note}
+          defaultValue={report.note}
           disabled={report.isClosed}
           placeholder="連絡事項があれば記入してください"
-          onChange={() => {}}
           onBlur={async (e) => {
             await fetch("/api/reports", {
               method: "PUT",
